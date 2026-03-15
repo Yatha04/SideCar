@@ -4,7 +4,7 @@ import { ContextAssembler, UnderstandingLevel } from './ContextAssembler';
 import { DiffResult } from './DiffEngine';
 
 const PREAMBLE =
-  'You are Sidecar, a code explanation assistant embedded in a VS Code side panel. ' +
+  'You are Lumen, a code explanation assistant embedded in a VS Code side panel. ' +
   'An AI coding agent just saved changes. Your job is to help the developer understand what happened.\n\n' +
   'Formatting rules:\n' +
   '- Use markdown. Keep it scannable: short paragraphs, bullet lists, inline `code` for identifiers.\n' +
@@ -33,7 +33,7 @@ const SYSTEM_PROMPTS: Record<UnderstandingLevel, string> = {
 };
 
 const SELECTION_SYSTEM =
-  'You are Sidecar, a code explanation assistant embedded in VS Code. ' +
+  'You are Lumen, a code explanation assistant embedded in VS Code. ' +
   'The user selected a portion of code and wants it explained.\n\n' +
   'Structure your response as:\n' +
   '- **What it does** — one-sentence purpose\n' +
@@ -42,7 +42,7 @@ const SELECTION_SYSTEM =
   'Use markdown. Be concise. Use inline `code` for identifiers.';
 
 const RE_EXPLAIN_SYSTEM =
-  'You are Sidecar, a code explanation assistant embedded in VS Code. ' +
+  'You are Lumen, a code explanation assistant embedded in VS Code. ' +
   'The user read your previous explanation and selected a specific part they want ' +
   'understood more deeply.\n\n' +
   'Provide a thorough explanation of the selected text in context of the original changes. ' +
@@ -95,13 +95,13 @@ export class LLMClient {
     onDone: () => void,
     onError: (err: Error) => void,
   ): Promise<void> {
-    const config = vscode.workspace.getConfiguration('sidecar');
+    const config = vscode.workspace.getConfiguration('lumen');
     const apiKey = config.get<string>('anthropicApiKey', '');
 
     if (!apiKey) {
       onError(
         new Error(
-          'No Anthropic API key configured. Set sidecar.anthropicApiKey in VS Code settings.',
+          'No Anthropic API key configured. Set lumen.anthropicApiKey in VS Code settings.',
         ),
       );
       return;
@@ -137,7 +137,7 @@ export class LLMClient {
       if (msg.includes('credit balance is too low')) {
         onError(new Error('Anthropic API credits exhausted. Add credits at console.anthropic.com → Plans & Billing.'));
       } else if (msg.includes('invalid x-api-key') || msg.includes('Invalid API Key')) {
-        onError(new Error('Invalid Anthropic API key. Check sidecar.anthropicApiKey in settings.'));
+        onError(new Error('Invalid Anthropic API key. Check lumen.anthropicApiKey in settings.'));
       } else if (msg.includes('rate_limit') || msg.includes('429')) {
         onError(new Error('Rate limited by Anthropic API. Wait a moment and save again.'));
       } else if (msg.includes('overloaded') || msg.includes('529')) {

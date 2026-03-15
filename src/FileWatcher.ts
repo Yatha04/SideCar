@@ -38,7 +38,7 @@ export class FileWatcher implements vscode.Disposable {
     this._events = events;
     this._workspaceRoot = workspaceRoot;
 
-    const config = vscode.workspace.getConfiguration('sidecar');
+    const config = vscode.workspace.getConfiguration('lumen');
     const debounceMs = config.get<number>('debounceMs', 3000);
     this._ignorePatterns = config.get<string[]>('ignorePatterns', []);
 
@@ -72,15 +72,15 @@ export class FileWatcher implements vscode.Disposable {
     // React to config changes (debounce delay + ignore patterns)
     this._disposables.push(
       vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('sidecar.debounceMs')) {
+        if (e.affectsConfiguration('lumen.debounceMs')) {
           const newDelay = vscode.workspace
-            .getConfiguration('sidecar')
+            .getConfiguration('lumen')
             .get<number>('debounceMs', 3000);
           this._debounce.setDelay(newDelay);
         }
-        if (e.affectsConfiguration('sidecar.ignorePatterns')) {
+        if (e.affectsConfiguration('lumen.ignorePatterns')) {
           this._ignorePatterns = vscode.workspace
-            .getConfiguration('sidecar')
+            .getConfiguration('lumen')
             .get<string[]>('ignorePatterns', []);
         }
       })

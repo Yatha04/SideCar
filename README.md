@@ -1,11 +1,11 @@
-# Sidecar
+# Lumen
 
-Sidecar is a VS Code extension that automatically explains code changes in a side panel using an LLM. Designed to run independently, Sidecar ensures it never interferes with your primary AI coding assistant.
+Lumen is a VS Code extension that automatically explains code changes in a side panel using an LLM. Designed to run independently, Lumen ensures it never interferes with your primary AI coding assistant.
 
 ## Features
 
 - **Auto-Explain:** Automatically watches for file saves, computes diffs, and generates explanations in the background without interrupting your workflow.
-- **On-Demand Explanations:** Select any code snippet and use "Sidecar: Explain Selection", or trigger "Explain Last Diff" to understand recent changes.
+- **On-Demand Explanations:** Select any code snippet and use "Lumen: Explain Selection", or trigger "Explain Last Diff" to understand recent changes.
 - **Adjustable Detail Levels:** Choose how deep you want the explanations to go:
   - **Architecture:** System-level flow and component integration.
   - **Developer:** Design patterns, libraries, and API decisions.
@@ -19,11 +19,11 @@ Configure the extension by adding your Anthropic API key to your VS Code setting
 
 ```json
 {
-  "sidecar.anthropicApiKey": "your-api-key-here"
+  "lumen.anthropicApiKey": "your-api-key-here"
 }
 ```
 
 ### Additional Configuration 
-- `sidecar.model`: The LLM model to use (default: `claude-sonnet-4-20250514`).
-- `sidecar.defaultLevel`: Default explanation level (`architecture`, `developer`, or `syntax`).
-- `sidecar.debounceMs`: Delay before auto-explaining changes (default: `3000`).
+- `lumen.model`: The LLM model to use (default: `claude-sonnet-4-20250514`).
+- `lumen.defaultLevel`: Default explanation level (`architecture`, `developer`, or `syntax`).
+- `lumen.debounceMs`: Delay before auto-explaining changes (default: `3000`).

@@ -1,6 +1,6 @@
 {
-  "name": "sidecar",
-  "displayName": "Sidecar",
+  "name": "lumen",
+  "displayName": "Lumen",
   "description": "Explains AI-generated code changes in a side panel",
   "version": "0.0.1",
   "engines": {
@@ -14,74 +14,75 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "sidecar",
-          "title": "Sidecar",
+          "id": "lumen",
+          "title": "Lumen",
           "icon": "resources/icon.svg"
         }
       ]
     },
     "views": {
-      "sidecar": [
+      "lumen": [
         {
           "type": "webview",
-          "id": "sidecar.panel",
-          "name": "Sidecar"
+          "id": "lumen.panel",
+          "name": "Lumen",
+          "icon": "resources/icon.svg"
         }
       ]
     },
     "commands": [
       {
-        "command": "sidecar.explainSelection",
-        "title": "Sidecar: Explain Selection"
+        "command": "lumen.explainSelection",
+        "title": "Lumen: Explain Selection"
       },
       {
-        "command": "sidecar.explainLastDiff",
-        "title": "Sidecar: Explain Last Diff"
+        "command": "lumen.explainLastDiff",
+        "title": "Lumen: Explain Last Diff"
       },
       {
-        "command": "sidecar.toggleLevel",
-        "title": "Sidecar: Toggle Understanding Level"
+        "command": "lumen.toggleLevel",
+        "title": "Lumen: Toggle Understanding Level"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "sidecar.explainSelection",
+          "command": "lumen.explainSelection",
           "when": "editorHasSelection"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "sidecar.explainSelection",
+        "command": "lumen.explainSelection",
         "key": "ctrl+shift+e",
         "mac": "cmd+shift+e",
         "when": "editorHasSelection"
       },
       {
-        "command": "sidecar.explainLastDiff",
+        "command": "lumen.explainLastDiff",
         "key": "ctrl+shift+d",
         "mac": "cmd+shift+d"
       }
     ],
     "configuration": {
-      "title": "Sidecar",
+      "title": "Lumen",
       "properties": {
-        "sidecar.anthropicApiKey": {
+        "lumen.anthropicApiKey": {
           "type": "string",
           "description": "Anthropic API key"
         },
-        "sidecar.model": {
+        "lumen.model": {
           "type": "string",
           "default": "claude-opus-4-6",
           "description": "Model to use"
         },
-        "sidecar.debounceMs": {
+        "lumen.debounceMs": {
           "type": "number",
           "default": 3000,
           "description": "Debounce delay in ms"
         },
-        "sidecar.defaultLevel": {
+        "lumen.defaultLevel": {
           "type": "string",
           "enum": [
             "architecture",
@@ -91,7 +92,7 @@
           "default": "developer",
           "description": "Default understanding level"
         },
-        "sidecar.ignorePatterns": {
+        "lumen.ignorePatterns": {
           "type": "array",
           "items": { "type": "string" },
           "default": [
@@ -105,9 +106,9 @@
             "yarn.lock",
             "pnpm-lock.yaml"
           ],
-          "description": "Glob patterns for files Sidecar should ignore (supports *, **, ?)"
+          "description": "Glob patterns for files Lumen should ignore (supports *, **, ?)"
         },
-        "sidecar.maxTokens": {
+        "lumen.maxTokens": {
           "type": "number",
           "default": 1024,
           "minimum": 256,
