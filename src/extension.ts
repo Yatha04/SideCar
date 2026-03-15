@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SidecarViewProvider } from './SidecarViewProvider';
+import { LumenViewProvider } from './LumenViewProvider';
 import { FileWatcher } from './FileWatcher';
 import { LLMClient } from './LLMClient';
 import { DiffResult } from './DiffEngine';
@@ -9,19 +9,19 @@ import { HistoryManager, EntryType } from './HistoryManager';
 
 function getDefaultLevel(): UnderstandingLevel {
   return vscode.workspace
-    .getConfiguration('sidecar')
+    .getConfiguration('lumen')
     .get<UnderstandingLevel>('defaultLevel', 'developer');
 }
 
 export function activate(context: vscode.ExtensionContext) {
   const initialLevel = context.globalState.get<UnderstandingLevel>(
-    'sidecar.level',
+    'lumen.level',
     getDefaultLevel(),
   );
-  const provider = new SidecarViewProvider(context.extensionUri, initialLevel);
+  const provider = new LumenViewProvider(context.extensionUri, initialLevel);
   const llmClient = new LLMClient();
   const history = new HistoryManager();
-  const output = vscode.window.createOutputChannel('Sidecar');
+  const output = vscode.window.createOutputChannel('Lumen');
   let lastDiffs: DiffResult[] = [];
 
   // Track which groupId+level combos have been generated or are in-flight
@@ -45,13 +45,13 @@ export function activate(context: vscode.ExtensionContext) {
   }, workspaceRoot);
 
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(SidecarViewProvider.viewId, provider),
+    vscode.window.registerWebviewViewProvider(LumenViewProvider.viewId, provider),
     fileWatcher,
     output,
   );
 
   function getCurrentLevel(): UnderstandingLevel {
-    return context.globalState.get<UnderstandingLevel>('sidecar.level', getDefaultLevel());
+    return context.globalState.get<UnderstandingLevel>('lumen.level', getDefaultLevel());
   }
 
   function sendHistoryPosition(): void {
@@ -209,7 +209,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   function onLevelChanged(level: UnderstandingLevel): void {
-    context.globalState.update('sidecar.level', level);
+    context.globalState.update('lumen.level', level);
     if (!latestGroupId) { return; }
 
     if (latestGroupDiffs) {
@@ -298,10 +298,10 @@ export function activate(context: vscode.ExtensionContext) {
   // --- Commands ---
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('sidecar.explainSelection', () => {
+    vscode.commands.registerCommand('lumen.explainSelection', () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor || editor.selection.isEmpty) {
-        vscode.window.showInformationMessage('Sidecar: Select some code first.');
+        vscode.window.showInformationMessage('Lumen: Select some code first.');
         return;
       }
 
@@ -336,9 +336,9 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('sidecar.explainLastDiff', () => {
+    vscode.commands.registerCommand('lumen.explainLastDiff', () => {
       if (lastDiffs.length === 0) {
-        vscode.window.showInformationMessage('Sidecar: No diff yet. Save a file first.');
+        vscode.window.showInformationMessage('Lumen: No diff yet. Save a file first.');
         return;
       }
       void runExplain(lastDiffs, 'on-demand');
@@ -346,12 +346,12 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('sidecar.toggleLevel', () => {
+    vscode.commands.registerCommand('lumen.toggleLevel', () => {
       const current = getCurrentLevel();
       const next = nextLevel(current);
       provider.setLevel(next);
       onLevelChanged(next);
-      vscode.window.showInformationMessage(`Sidecar: Level set to ${next}`);
+      vscode.window.showInformationMessage(`Lumen: Level set to ${next}`);
     }),
   );
 }

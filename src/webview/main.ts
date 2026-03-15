@@ -49,7 +49,7 @@ function setActiveLevel(level: string): void {
 }
 
 // Initialize from injected value
-const initialLevel = (window as unknown as Record<string, unknown>).__sidecarInitialLevel as string | undefined;
+const initialLevel = (window as unknown as Record<string, unknown>).__lumenInitialLevel as string | undefined;
 if (initialLevel) {
   setActiveLevel(initialLevel);
 }
