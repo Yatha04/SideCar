@@ -1,11 +1,19 @@
 import * as vscode from 'vscode';
+import { UnderstandingLevel } from './ContextAssembler';
+import { isValidLevel } from './levelUtils';
 
 export class SidecarViewProvider implements vscode.WebviewViewProvider {
   static readonly viewId = 'sidecar.panel';
 
   private _webviewView?: vscode.WebviewView;
 
-  constructor(private readonly _extensionUri: vscode.Uri) {}
+  private readonly _onDidChangeLevel = new vscode.EventEmitter<UnderstandingLevel>();
+  readonly onDidChangeLevel = this._onDidChangeLevel.event;
+
+  constructor(
+    private readonly _extensionUri: vscode.Uri,
+    private _currentLevel: UnderstandingLevel = 'developer',
+  ) {}
 
   resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -20,28 +28,47 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
     };
 
     webviewView.webview.html = this._getHtml(webviewView.webview);
+
+    webviewView.webview.onDidReceiveMessage((msg: unknown) => {
+      if (
+        typeof msg === 'object' && msg !== null &&
+        (msg as Record<string, unknown>).type === 'setLevel'
+      ) {
+        const level = (msg as Record<string, unknown>).level;
+        if (isValidLevel(level)) {
+          this._currentLevel = level;
+          this._onDidChangeLevel.fire(level);
+        }
+      }
+    });
+  }
+
+  setLevel(level: UnderstandingLevel): void {
+    this._currentLevel = level;
+    this._post({ type: 'setLevel', level });
   }
 
   startStream(
-    id: string,
+    groupId: string,
+    level: UnderstandingLevel,
     fileNames: string[],
     linesAdded: number,
     linesRemoved: number,
   ): void {
-    this._post({ type: 'streamStart', id, fileNames, linesAdded, linesRemoved });
+    this._post({ type: 'streamStart', groupId, level, fileNames, linesAdded, linesRemoved });
     this._webviewView?.show?.(true);
   }
 
-  streamChunk(id: string, text: string): void {
-    this._post({ type: 'streamChunk', id, text });
+  streamChunk(groupId: string, level: UnderstandingLevel, text: string): void {
+    this._post({ type: 'streamChunk', groupId, level, text });
   }
 
-  streamDone(id: string): void {
-    this._post({ type: 'streamDone', id });
+  streamDone(groupId: string, level: UnderstandingLevel): void {
+    this._post({ type: 'streamDone', groupId, level });
   }
 
-  streamError(id: string, message: string): void {
-    this._post({ type: 'streamError', id, message });
+  streamError(groupId: string, level: UnderstandingLevel, message: string): void {
+    this._post({ type: 'streamError', groupId, level, message });
   }
 
   private _post(message: unknown): void {
@@ -57,7 +84,7 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src ${webview.cspSource};">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * { box-sizing: border-box; }
@@ -84,6 +111,35 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
       flex-shrink: 0;
     }
     #status-text { font-size: 0.85em; opacity: 0.8; }
+
+    /* Level toggle */
+    .level-toggle {
+      display: flex;
+      margin-bottom: 12px;
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .level-btn {
+      flex: 1;
+      padding: 4px 8px;
+      font-size: 0.8em;
+      font-family: var(--vscode-font-family);
+      border: none;
+      border-right: 1px solid var(--vscode-panel-border);
+      background: transparent;
+      color: var(--vscode-foreground);
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.15s, background-color 0.15s;
+    }
+    .level-btn:last-child { border-right: none; }
+    .level-btn:hover { opacity: 1; background: var(--vscode-list-hoverBackground); }
+    .level-btn.active {
+      opacity: 1;
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+    }
 
     /* Entry card */
     .entry {
@@ -113,7 +169,8 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
     }
 
     /* Entry body */
-    .entry-body { padding: 10px 12px; min-height: 40px; }
+    .entry-body { padding: 10px 12px; min-height: 40px; display: none; }
+    .entry-body.visible { display: block; }
     .entry-body.loading, .entry-body.streaming { opacity: 0.7; }
     .entry-body.streaming {
       white-space: pre-wrap;
@@ -121,6 +178,7 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
       font-size: 0.9em;
     }
     .entry-body.error { color: var(--vscode-errorForeground, #f85149); font-size: 0.9em; }
+    .entry-body.pending { opacity: 0.5; font-size: 0.85em; font-style: italic; }
 
     /* Loading dots */
     .dots span { animation: blink 1.2s infinite; opacity: 0; }
@@ -168,7 +226,13 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
     <span class="dot"></span>
     <span id="status-text">Watching for file saves\u2026</span>
   </div>
+  <div class="level-toggle" id="level-toggle">
+    <button class="level-btn" data-level="architecture">Architecture</button>
+    <button class="level-btn" data-level="developer">Developer</button>
+    <button class="level-btn" data-level="syntax">Syntax</button>
+  </div>
   <div id="output"></div>
+  <script>window.__sidecarInitialLevel = "${this._currentLevel}";</script>
   <script src="${webviewJsUri}"></script>
 </body>
 </html>`;
