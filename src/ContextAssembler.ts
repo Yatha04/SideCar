@@ -34,6 +34,46 @@ export class ContextAssembler {
     return parts.join('\n');
   }
 
+  assembleSelection(selectedText: string, fileName: string): string {
+    return [
+      `**File:** \`${fileName}\`\n`,
+      '**Selected code:**',
+      '```',
+      selectedText,
+      '```',
+    ].join('\n');
+  }
+
+  assembleReExplain(
+    selectedText: string,
+    diffs?: DiffResult[],
+    originalSelectionText?: string,
+  ): string {
+    const parts: string[] = [];
+
+    if (diffs && diffs.length > 0) {
+      parts.push('**Original changes for context:**\n');
+      for (const diff of diffs) {
+        parts.push(`**File:** \`${diff.fileName}\`\n`);
+        parts.push('```diff');
+        parts.push(diff.patch);
+        parts.push('```\n');
+      }
+    } else if (originalSelectionText) {
+      parts.push('**Original code for context:**\n');
+      parts.push('```');
+      parts.push(originalSelectionText);
+      parts.push('```\n');
+    }
+
+    parts.push('**The user wants a deeper explanation of this part:**\n');
+    parts.push('```');
+    parts.push(selectedText);
+    parts.push('```');
+
+    return parts.join('\n');
+  }
+
   /** Extract ~CONTEXT_LINES lines centred on the first hunk. */
   private _extractContext(patch: string, content: string): string | null {
     const match = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/m.exec(patch);

@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
 import { UnderstandingLevel } from './ContextAssembler';
 import { isValidLevel } from './levelUtils';
+import { HistoryEntry } from './HistoryManager';
+
+export interface ReExplainRequest {
+  text: string;
+  groupId: string;
+}
 
 export class SidecarViewProvider implements vscode.WebviewViewProvider {
   static readonly viewId = 'sidecar.panel';
@@ -9,6 +15,15 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
 
   private readonly _onDidChangeLevel = new vscode.EventEmitter<UnderstandingLevel>();
   readonly onDidChangeLevel = this._onDidChangeLevel.event;
+
+  private readonly _onReExplain = new vscode.EventEmitter<ReExplainRequest>();
+  readonly onReExplain = this._onReExplain.event;
+
+  private readonly _onHistoryBack = new vscode.EventEmitter<void>();
+  readonly onHistoryBack = this._onHistoryBack.event;
+
+  private readonly _onHistoryForward = new vscode.EventEmitter<void>();
+  readonly onHistoryForward = this._onHistoryForward.event;
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
@@ -30,15 +45,30 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.html = this._getHtml(webviewView.webview);
 
     webviewView.webview.onDidReceiveMessage((msg: unknown) => {
-      if (
-        typeof msg === 'object' && msg !== null &&
-        (msg as Record<string, unknown>).type === 'setLevel'
-      ) {
-        const level = (msg as Record<string, unknown>).level;
-        if (isValidLevel(level)) {
-          this._currentLevel = level;
-          this._onDidChangeLevel.fire(level);
+      if (typeof msg !== 'object' || msg === null) { return; }
+      const m = msg as Record<string, unknown>;
+
+      switch (m.type) {
+        case 'setLevel': {
+          const level = m.level;
+          if (isValidLevel(level)) {
+            this._currentLevel = level;
+            this._onDidChangeLevel.fire(level);
+          }
+          break;
         }
+        case 'reExplain': {
+          if (typeof m.text === 'string' && typeof m.groupId === 'string') {
+            this._onReExplain.fire({ text: m.text, groupId: m.groupId });
+          }
+          break;
+        }
+        case 'historyBack':
+          this._onHistoryBack.fire();
+          break;
+        case 'historyForward':
+          this._onHistoryForward.fire();
+          break;
       }
     });
   }
@@ -54,8 +84,9 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
     fileNames: string[],
     linesAdded: number,
     linesRemoved: number,
+    entryType: string = 'auto',
   ): void {
-    this._post({ type: 'streamStart', groupId, level, fileNames, linesAdded, linesRemoved });
+    this._post({ type: 'streamStart', groupId, level, fileNames, linesAdded, linesRemoved, entryType });
     this._webviewView?.show?.(true);
   }
 
@@ -69,6 +100,32 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
 
   streamError(groupId: string, level: UnderstandingLevel, message: string): void {
     this._post({ type: 'streamError', groupId, level, message });
+  }
+
+  updateHistoryPosition(label: string, canBack: boolean, canForward: boolean): void {
+    this._post({ type: 'historyPosition', label, canBack, canForward });
+  }
+
+  showHistoryEntry(entry: HistoryEntry, level: UnderstandingLevel, positionLabel: string, canBack: boolean, canForward: boolean): void {
+    // Serialize the content Map to a plain object
+    const contentObj: Record<string, string> = {};
+    for (const [k, v] of entry.content) {
+      contentObj[k] = v;
+    }
+    this._post({
+      type: 'showEntry',
+      groupId: entry.groupId,
+      fileNames: entry.fileNames,
+      linesAdded: entry.linesAdded,
+      linesRemoved: entry.linesRemoved,
+      entryType: entry.type,
+      selectionFileName: entry.selectionFileName,
+      content: contentObj,
+      level,
+      positionLabel,
+      canBack,
+      canForward,
+    });
   }
 
   private _post(message: unknown): void {
@@ -115,7 +172,7 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
     /* Level toggle */
     .level-toggle {
       display: flex;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       border: 1px solid var(--vscode-panel-border);
       border-radius: 4px;
       overflow: hidden;
@@ -141,6 +198,34 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
       color: var(--vscode-button-foreground);
     }
 
+    /* History nav */
+    .history-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 0.8em;
+    }
+    .history-nav button {
+      background: transparent;
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 3px;
+      color: var(--vscode-foreground);
+      cursor: pointer;
+      padding: 2px 8px;
+      font-family: var(--vscode-font-family);
+      font-size: 1em;
+    }
+    .history-nav button:hover:not(:disabled) {
+      background: var(--vscode-list-hoverBackground);
+    }
+    .history-nav button:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+    #history-label { opacity: 0.7; min-width: 40px; text-align: center; }
+
     /* Entry card */
     .entry {
       margin-bottom: 16px;
@@ -161,6 +246,14 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
     .entry-stats { opacity: 0.8; }
     .entry-stats .added  { color: var(--vscode-gitDecoration-addedResourceForeground,   #2ea043); }
     .entry-stats .removed{ color: var(--vscode-gitDecoration-deletedResourceForeground, #f85149); }
+    .entry-type-badge {
+      font-size: 0.75em;
+      opacity: 0.6;
+      padding: 1px 5px;
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 3px;
+      margin-left: 6px;
+    }
     .entry-timestamp {
       padding: 4px 10px;
       font-size: 0.75em;
@@ -179,6 +272,25 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
     }
     .entry-body.error { color: var(--vscode-errorForeground, #f85149); font-size: 0.9em; }
     .entry-body.pending { opacity: 0.5; font-size: 0.85em; font-style: italic; }
+
+    /* Re-explain button */
+    #reexplain-btn {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      padding: 4px 10px;
+      font-size: 0.8em;
+      font-family: var(--vscode-font-family);
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    #reexplain-btn:hover {
+      background: var(--vscode-button-hoverBackground);
+    }
 
     /* Loading dots */
     .dots span { animation: blink 1.2s infinite; opacity: 0; }
@@ -216,8 +328,54 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
       opacity: .8;
     }
     .entry-body a    { color: var(--vscode-textLink-foreground); }
+    .entry-body a:hover { color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground)); }
     .entry-body strong { font-weight: 600; }
     .entry-body hr   { border:none; border-top:1px solid var(--vscode-panel-border); }
+
+    /* Tables */
+    .entry-body table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: .5em 0;
+      font-size: 0.9em;
+    }
+    .entry-body th, .entry-body td {
+      border: 1px solid var(--vscode-panel-border);
+      padding: 4px 8px;
+      text-align: left;
+    }
+    .entry-body th {
+      background-color: var(--vscode-editor-background);
+      font-weight: 600;
+    }
+    .entry-body tr:hover {
+      background-color: var(--vscode-list-hoverBackground);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: var(--vscode-scrollbarSlider-background, rgba(100,100,100,0.4));
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--vscode-scrollbarSlider-hoverBackground, rgba(100,100,100,0.7));
+    }
+    ::-webkit-scrollbar-thumb:active {
+      background: var(--vscode-scrollbarSlider-activeBackground, rgba(100,100,100,0.9));
+    }
+
+    /* Focus outlines for accessibility */
+    button:focus-visible {
+      outline: 1px solid var(--vscode-focusBorder);
+      outline-offset: -1px;
+    }
+
+    /* Selection highlight */
+    ::selection {
+      background-color: var(--vscode-editor-selectionBackground, rgba(38,79,120,0.5));
+    }
   </style>
 </head>
 <body>
@@ -231,7 +389,13 @@ export class SidecarViewProvider implements vscode.WebviewViewProvider {
     <button class="level-btn" data-level="developer">Developer</button>
     <button class="level-btn" data-level="syntax">Syntax</button>
   </div>
+  <div class="history-nav">
+    <button id="history-back" disabled>&larr;</button>
+    <span id="history-label">0 / 0</span>
+    <button id="history-forward" disabled>&rarr;</button>
+  </div>
   <div id="output"></div>
+  <button id="reexplain-btn">Re-explain this</button>
   <script>window.__sidecarInitialLevel = "${this._currentLevel}";</script>
   <script src="${webviewJsUri}"></script>
 </body>

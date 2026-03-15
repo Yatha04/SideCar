@@ -7,9 +7,18 @@ export class DebounceController {
   private _pending = new Set<string>();
 
   constructor(
-    private readonly _delayMs: number,
+    private _delayMs: number,
     private readonly _onFlush: (uris: string[]) => void
   ) {}
+
+  /** Update the debounce delay (takes effect on the next push). Clamped to 500ms–30s. */
+  setDelay(ms: number): void {
+    this._delayMs = Math.max(500, Math.min(ms, 30000));
+  }
+
+  get delay(): number {
+    return this._delayMs;
+  }
 
   /** Record a file save. Resets the debounce timer. */
   push(uri: string): void {

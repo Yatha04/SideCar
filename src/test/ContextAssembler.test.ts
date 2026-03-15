@@ -37,4 +37,27 @@ describe('ContextAssembler', () => {
     expect(result).toContain('+modified');
     expect(result).toContain('-line2');
   });
+
+  describe('assembleSelection', () => {
+    it('includes selected text and file name', () => {
+      const result = assembler.assembleSelection('const x = 1;', 'utils.ts');
+      expect(result).toContain('utils.ts');
+      expect(result).toContain('const x = 1;');
+    });
+  });
+
+  describe('assembleReExplain', () => {
+    it('includes original diff and selected text', () => {
+      const result = assembler.assembleReExplain('some explanation text', sampleDiffs, undefined);
+      expect(result).toContain('app.ts');
+      expect(result).toContain('some explanation text');
+      expect(result).toContain('deeper explanation');
+    });
+
+    it('includes original selection text when no diffs', () => {
+      const result = assembler.assembleReExplain('drill down text', undefined, 'const x = 1;');
+      expect(result).toContain('const x = 1;');
+      expect(result).toContain('drill down text');
+    });
+  });
 });

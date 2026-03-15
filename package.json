@@ -90,6 +90,29 @@
           ],
           "default": "developer",
           "description": "Default understanding level"
+        },
+        "sidecar.ignorePatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [
+            "node_modules",
+            ".git",
+            "dist",
+            "*.min.js",
+            "*.min.css",
+            "*.map",
+            "package-lock.json",
+            "yarn.lock",
+            "pnpm-lock.yaml"
+          ],
+          "description": "Glob patterns for files Sidecar should ignore (supports *, **, ?)"
+        },
+        "sidecar.maxTokens": {
+          "type": "number",
+          "default": 1024,
+          "minimum": 256,
+          "maximum": 4096,
+          "description": "Maximum tokens for LLM responses"
         }
       }
     }
