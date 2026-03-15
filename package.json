@@ -73,7 +73,7 @@
         },
         "sidecar.model": {
           "type": "string",
-          "default": "claude-sonnet-4-20250514",
+          "default": "claude-opus-4-6",
           "description": "Model to use"
         },
         "sidecar.debounceMs": {
@@ -112,6 +112,8 @@
     "vitest": "^4.1.0"
   },
   "dependencies": {
-    "diff": "^8.0.3"
+    "@anthropic-ai/sdk": "^0.52.0",
+    "diff": "^8.0.3",
+    "marked": "^15.0.0"
   }
 }

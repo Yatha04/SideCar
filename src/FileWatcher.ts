@@ -84,6 +84,7 @@ export class FileWatcher implements vscode.Disposable {
       const result = this._diffEngine.computeDiff(uri, oldContent, newContent);
 
       if (isDiffResult(result)) {
+        result.content = newContent;
         diffs.push(result);
       } else {
         this._events.onSkipped(uri, result.reason);

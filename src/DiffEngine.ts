@@ -6,6 +6,8 @@ export interface DiffResult {
   patch: string;
   linesAdded: number;
   linesRemoved: number;
+  /** Full file content after save — used by ContextAssembler for surrounding context. */
+  content?: string;
 }
 
 export interface SkipReason {
