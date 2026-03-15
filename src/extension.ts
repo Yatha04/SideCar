@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { SidecarViewProvider } from './SidecarViewProvider';
+import { FileWatcher } from './FileWatcher';
 
 export function activate(context: vscode.ExtensionContext) {
   const provider = new SidecarViewProvider(context.extensionUri);
@@ -8,6 +9,20 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.registerWebviewViewProvider(SidecarViewProvider.viewId, provider)
   );
 
+  // Phase 1: File Watcher + Diff
+  const fileWatcher = new FileWatcher({
+    onDiffs: (diffs) => {
+      provider.showDiffs(diffs);
+    },
+    onSkipped: (uri, reason) => {
+      const fileName = uri.split('/').pop() ?? uri;
+      console.log(`[Sidecar] Skipped ${fileName}: ${reason}`);
+    },
+  });
+
+  context.subscriptions.push(fileWatcher);
+
+  // Stub commands for future phases
   context.subscriptions.push(
     vscode.commands.registerCommand('sidecar.explainSelection', () => {
       vscode.window.showInformationMessage('Sidecar: Explain Selection coming in Phase 4.');

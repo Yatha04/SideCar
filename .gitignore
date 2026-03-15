@@ -5,3 +5,7 @@ out/
 # Claude Code local files
 CLAUDE.md
 .claude/
+
+
+#Progress
+progress.md

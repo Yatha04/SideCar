@@ -99,13 +99,19 @@
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --preserveWatchOutput",
-    "package": "node esbuild.js --production"
+    "package": "node esbuild.js --production",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
+    "@types/diff": "^7.0.2",
     "@types/node": "^20",
+    "@types/vscode": "^1.85.0",
     "esbuild": "^0.25",
+    "npm-run-all2": "^6",
     "typescript": "^5.4",
-    "npm-run-all2": "^6"
+    "vitest": "^4.1.0"
+  },
+  "dependencies": {
+    "diff": "^8.0.3"
   }
 }
