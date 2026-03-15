@@ -263,7 +263,19 @@ window.addEventListener('message', (event: MessageEvent<IncomingMessage>) => {
       const body = getBody(msg.groupId, msg.level);
       if (body) {
         body.className = 'entry-body error' + (msg.level === activeLevel ? ' visible' : '');
-        body.textContent = `\u26a0 ${msg.message}`;
+        body.innerHTML = '';
+
+        const errorText = document.createElement('span');
+        errorText.textContent = `\u26a0 ${msg.message}`;
+        body.appendChild(errorText);
+
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'retry-btn';
+        retryBtn.textContent = 'Retry';
+        retryBtn.addEventListener('click', () => {
+          vscode.postMessage({ type: 'retry', groupId: msg.groupId, level: msg.level });
+        });
+        body.appendChild(retryBtn);
       }
 
       if (msg.level === activeLevel) {

@@ -8,6 +8,11 @@ export interface ReExplainRequest {
   groupId: string;
 }
 
+export interface RetryRequest {
+  groupId: string;
+  level: UnderstandingLevel;
+}
+
 export class LumenViewProvider implements vscode.WebviewViewProvider {
   static readonly viewId = 'lumen.panel';
 
@@ -24,6 +29,9 @@ export class LumenViewProvider implements vscode.WebviewViewProvider {
 
   private readonly _onHistoryForward = new vscode.EventEmitter<void>();
   readonly onHistoryForward = this._onHistoryForward.event;
+
+  private readonly _onRetry = new vscode.EventEmitter<RetryRequest>();
+  readonly onRetry = this._onRetry.event;
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
@@ -69,6 +77,13 @@ export class LumenViewProvider implements vscode.WebviewViewProvider {
         case 'historyForward':
           this._onHistoryForward.fire();
           break;
+        case 'retry': {
+          const retryLevel = m.level;
+          if (typeof m.groupId === 'string' && isValidLevel(retryLevel)) {
+            this._onRetry.fire({ groupId: m.groupId, level: retryLevel });
+          }
+          break;
+        }
       }
     });
   }
@@ -328,6 +343,24 @@ export class LumenViewProvider implements vscode.WebviewViewProvider {
       line-height: 1.6;
     }
     .entry-body.error { color: #f87171; background: rgba(248, 113, 113, 0.1); border-radius: 6px; padding: 12px; }
+    .entry-body.error .retry-btn {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 16px;
+      font-size: 0.85em;
+      font-weight: 500;
+      font-family: inherit;
+      color: #fff;
+      background: var(--lumen-accent);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .entry-body.error .retry-btn:hover {
+      background: var(--lumen-accent-hover);
+      box-shadow: 0 0 12px var(--lumen-accent-glow);
+    }
     .entry-body.pending { color: var(--lumen-text-muted); font-style: italic; text-align: center; padding: 20px 0; }
 
     /* Re-explain button */

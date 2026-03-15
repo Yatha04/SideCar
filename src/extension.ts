@@ -94,6 +94,7 @@ export function activate(context: vscode.ExtensionContext) {
         fileWatcher.updateCacheAfterExplain(diffs.map(d => d.uri));
       },
       (err) => {
+        generated.delete(key);
         streamBuffers.delete(key);
         provider.streamError(groupId, level, err.message);
       },
@@ -127,6 +128,7 @@ export function activate(context: vscode.ExtensionContext) {
         provider.streamDone(groupId, level);
       },
       (err) => {
+        generated.delete(key);
         streamBuffers.delete(key);
         provider.streamError(groupId, level, err.message);
       },
@@ -163,6 +165,7 @@ export function activate(context: vscode.ExtensionContext) {
         provider.streamDone(groupId, level);
       },
       (err) => {
+        generated.delete(key);
         streamBuffers.delete(key);
         provider.streamError(groupId, level, err.message);
       },
@@ -292,6 +295,21 @@ export function activate(context: vscode.ExtensionContext) {
         originalEntry?.diffs, originalEntry?.selectionText,
         level,
       );
+    }),
+  );
+
+  context.subscriptions.push(
+    provider.onRetry(({ groupId, level }) => {
+      const entry = history.getByGroupId(groupId);
+      if (!entry) { return; }
+
+      if (entry.diffs && entry.diffs.length > 0) {
+        void runExplainForLevel(groupId, entry.diffs, level, entry.type);
+      } else if (entry.selectionText && entry.selectionFileName) {
+        void runSelectionForLevel(groupId, entry.selectionText, entry.selectionFileName, level);
+      } else if (entry.type === 're-explain' && entry.selectionText) {
+        void runReExplainForLevel(groupId, entry.selectionText, entry.diffs, entry.selectionText, level);
+      }
     }),
   );
 
