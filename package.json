@@ -1,0 +1,111 @@
+{
+  "name": "sidecar",
+  "displayName": "Sidecar",
+  "description": "Explains AI-generated code changes in a side panel",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sidecar",
+          "title": "Sidecar",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "sidecar": [
+        {
+          "type": "webview",
+          "id": "sidecar.panel",
+          "name": "Sidecar"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "sidecar.explainSelection",
+        "title": "Sidecar: Explain Selection"
+      },
+      {
+        "command": "sidecar.explainLastDiff",
+        "title": "Sidecar: Explain Last Diff"
+      },
+      {
+        "command": "sidecar.toggleLevel",
+        "title": "Sidecar: Toggle Understanding Level"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "sidecar.explainSelection",
+          "when": "editorHasSelection"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "sidecar.explainSelection",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "sidecar.explainLastDiff",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d"
+      }
+    ],
+    "configuration": {
+      "title": "Sidecar",
+      "properties": {
+        "sidecar.anthropicApiKey": {
+          "type": "string",
+          "description": "Anthropic API key"
+        },
+        "sidecar.model": {
+          "type": "string",
+          "default": "claude-sonnet-4-20250514",
+          "description": "Model to use"
+        },
+        "sidecar.debounceMs": {
+          "type": "number",
+          "default": 3000,
+          "description": "Debounce delay in ms"
+        },
+        "sidecar.defaultLevel": {
+          "type": "string",
+          "enum": [
+            "architecture",
+            "developer",
+            "syntax"
+          ],
+          "default": "developer",
+          "description": "Default understanding level"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc --noEmit && node esbuild.js --production",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --preserveWatchOutput",
+    "package": "node esbuild.js --production"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20",
+    "esbuild": "^0.25",
+    "typescript": "^5.4",
+    "npm-run-all2": "^6"
+  }
+}
